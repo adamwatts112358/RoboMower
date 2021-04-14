@@ -15,10 +15,10 @@ print(gamepad)
 # Setup GPIO
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
-motorA_dir_pin = 24 # Green
-motorA_pwm_pin = 23 # Blue
-motorB_dir_pin = 27 # Orange
-motorB_pwm_pin = 22 # White
+motorA_dir_pin = 26 # Green
+motorA_pwm_pin = 19 # Blue
+motorB_dir_pin = 20 # Purple
+motorB_pwm_pin = 21 # Grey
 GPIO.setup(motorA_dir_pin, GPIO.OUT)
 GPIO.setup(motorA_pwm_pin, GPIO.OUT)
 GPIO.setup(motorB_dir_pin, GPIO.OUT)

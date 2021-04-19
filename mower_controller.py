@@ -15,17 +15,12 @@ print(gamepad)
 # Setup GPIO
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
-<<<<<<< HEAD
+
 motorA_dir_pin = 26 # Green
 motorA_pwm_pin = 19 # Blue
-motorB_dir_pin = 20 # Purple
-motorB_pwm_pin = 21 # Grey
-=======
-motorA_dir_pin = 24 # Green
-motorA_pwm_pin = 23 # Blue
-motorB_dir_pin = 27 # Orange
-motorB_pwm_pin = 22 # White
->>>>>>> refs/remotes/origin/main
+motorB_dir_pin = 23 #20 # Purple
+motorB_pwm_pin = 24 #21 # Grey
+
 GPIO.setup(motorA_dir_pin, GPIO.OUT)
 GPIO.setup(motorA_pwm_pin, GPIO.OUT)
 GPIO.setup(motorB_dir_pin, GPIO.OUT)
@@ -60,7 +55,7 @@ def button(event):
         if event.value == 1:
             print("Stop!")
             stop()
-            zero(event)
+            #zero(event)
             
 def driveMotor(pwm_pin, dir_pin, value):
     # Set the direction pin
@@ -86,7 +81,7 @@ try:
             if abs(event.value) < axis_tol:
                 value = 0.0
             if event.code == ecodes.ABS_Y: # Left stick Up/Down
-               driveMotor(pwm_A, motorA_dir_pin, value)
+                driveMotor(pwm_A, motorA_dir_pin, value)
             elif event.code == ecodes.ABS_RY: # Right stick Up/Down
                 driveMotor(pwm_B, motorB_dir_pin, value)
         # Buttons

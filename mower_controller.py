@@ -1,5 +1,6 @@
 from evdev import list_devices, InputDevice, categorize, ecodes
 import RPi.GPIO as GPIO
+import atexit
 
 # To do:
 ## Add button control to increase/decrease PWM freq.
@@ -21,6 +22,10 @@ motorA_pwm_pin = 19 # Blue
 motorB_dir_pin = 23 #20 # Purple
 motorB_pwm_pin = 24 #21 # Grey
 
+status_LED_pin = 14
+GPIO.setup(status_LED_pin, GPIO.OUT)
+GPIO.output(status_LED_pin, GPIO.HIGH)
+
 GPIO.setup(motorA_dir_pin, GPIO.OUT)
 GPIO.setup(motorA_pwm_pin, GPIO.OUT)
 GPIO.setup(motorB_dir_pin, GPIO.OUT)
@@ -30,6 +35,10 @@ pwm_A = GPIO.PWM(motorA_pwm_pin, pwm_freq)
 pwm_B = GPIO.PWM(motorB_pwm_pin, pwm_freq)
 pwm_A.start(0)
 pwm_B.start(0)
+
+def exit_handler():
+    stop()
+    GPIO.cleanup()
 
 def stop():
     GPIO.output(motorA_dir_pin, GPIO.LOW)
@@ -91,4 +100,6 @@ except:
     pass
 finally:
     stop()
-    #GPIO.cleanup()
+    GPIO.cleanup()
+
+atexit.register(exit_handler)

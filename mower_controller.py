@@ -1,24 +1,32 @@
-from evdev import list_devices, InputDevice, categorize, ecodes
 import RPi.GPIO as GPIO
+import socket
 
-# To do:
-## Add button control to increase/decrease PWM freq.
+# Create a TCP/IP socket
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-# Setup gamepad
+# Bind the socket to the address given on the command line
+server_name = 'raspberrypi.local'
+server_address = (server_name, 10000)
+print('starting up on {} port {}'.format(*server_address))
+sock.bind(server_address)
+sock.listen(1)
+
 zeroL = 0.0
 zeroR = 0.0
-axis_max = 33000.0
-axis_tol = 10*330.0
-gamepad = InputDevice(list_devices()[0])
-print(gamepad)
 
 # Setup GPIO
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
-motorA_dir_pin = 24 # Green
-motorA_pwm_pin = 23 # Blue
-motorB_dir_pin = 27 # Orange
-motorB_pwm_pin = 22 # White
+
+motorA_dir_pin = 26 # Green
+motorA_pwm_pin = 19 # Blue
+motorB_dir_pin = 23 #20 # Purple
+motorB_pwm_pin = 24 #21 # Grey
+
+status_LED_pin = 14
+GPIO.setup(status_LED_pin, GPIO.OUT)
+GPIO.output(status_LED_pin, GPIO.HIGH)
+
 GPIO.setup(motorA_dir_pin, GPIO.OUT)
 GPIO.setup(motorA_pwm_pin, GPIO.OUT)
 GPIO.setup(motorB_dir_pin, GPIO.OUT)
@@ -36,7 +44,7 @@ def stop():
     GPIO.output(motorB_pwm_pin, GPIO.LOW)
     pwm_A.ChangeDutyCycle(0.0)
     pwm_B.ChangeDutyCycle(0.0)
-    
+    print("Stop!")
 
 def zero(event):
     global zeroL, zeroR
@@ -46,47 +54,44 @@ def zero(event):
     elif event.code == ecodes.ABS_RY:
         # Zero the right stick
         zeroR = event.value
-
-def button(event):
-    # B button
-    if event.code == 305:
-        if event.value == 1:
-            print("Stop!")
-            stop()
-            zero(event)
             
-def driveMotor(pwm_pin, dir_pin, value):
+def driveMotor(motor, direction, speed):
+    if motor is "L":
+        dir_pin = motorA_dir_pin
+        pwm = pwm_A
+    elif motor is "R":
+        dir_pin = motorB_dir_pin
+        pwm = pwm_B
     # Set the direction pin
-    if value <= 0.0:
-        direction = 'forward'
+    if direction is 'F':
         GPIO.output(dir_pin, GPIO.HIGH)
-    elif value > 0.0:
-        direction = 'backward'
+    elif direction is 'B':
         GPIO.output(dir_pin, GPIO.LOW)
 
     # Set the PWM speed
-    speed = float(100.0*(abs(value)/axis_max))
-    pwm_pin.ChangeDutyCycle(speed)
-    print('%s %s %f'%(pwm_pin, direction, speed))
+    pwm.ChangeDutyCycle(speed)
+    print('%s %s %f'%(motor, direction, speed))
 
-
-# Main controller loop
-try:
-    for event in gamepad.read_loop():
-        # Joystick
-        if event.type == ecodes.EV_ABS:
-            value = event.value
-            if abs(event.value) < axis_tol:
-                value = 0.0
-            if event.code == ecodes.ABS_Y: # Left stick Up/Down
-               driveMotor(pwm_A, motorA_dir_pin, value)
-            elif event.code == ecodes.ABS_RY: # Right stick Up/Down
-                driveMotor(pwm_B, motorB_dir_pin, value)
-        # Buttons
-        elif event.type == ecodes.EV_KEY:
-            button(event)
-except:
-    pass
-finally:
-    stop()
-    #GPIO.cleanup()
+while True:
+    print('waiting for a connection')
+    connection, client_address = sock.accept()
+    try:
+        print('client connected:', client_address)
+        while True:
+            data = connection.recv(8)
+            if data:
+                #connection.sendall(data) # respond to client
+                message = data.decode('utf-8')
+                if "Stop!" in message:
+                    stop()
+                else:
+                    motor = message.split()[0]
+                    direction = message.split()[1]
+                    speed = float(message.split()[2])
+                    driveMotor(motor, direction, speed)
+            else:
+                break
+    finally:
+        stop()
+        GPIO.cleanup()
+        connection.close()
